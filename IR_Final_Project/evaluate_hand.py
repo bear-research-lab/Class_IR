@@ -131,6 +131,9 @@ def main() -> None:
 
     rng = np.random.default_rng(args.seed)
     print(f"Hand: {args.hand}   kinematics: {args.kinematics}   seed: {args.seed}")
+    ungraded = f" (--motion-scale {args.motion_scale:g}: not a graded score)" if args.motion_scale != 1 else ""
+    if ungraded:
+        print(f"WARNING: every robot move is {args.motion_scale:g}x slower than in grading{ungraded}")
     print(f"Target bulb force {TARGET_FORCE} N per side, tolerance {FORCE_TOLERANCE} N; "
           f"shaft dia {PipetteSpec.SHAFT_RANGE[0] * 2e3:.0f}-{PipetteSpec.SHAFT_RANGE[1] * 2e3:.0f} mm, "
           f"bulb dia {PipetteSpec.BULB_RANGE[0] * 2e3:.0f}-{PipetteSpec.BULB_RANGE[1] * 2e3:.0f} mm\n")
@@ -169,7 +172,7 @@ def main() -> None:
     means = np.array([r[3].mean_force for r in results])
     print("-" * len(header.splitlines()[0]))
     print(f"Hand score (mean reward): {rewards.mean():.3f}   min {rewards.min():.3f}   "
-          f"task success {sum(r[3].task_passed for r in results)}/{len(results)}")
+          f"task success {sum(r[3].task_passed for r in results)}/{len(results)}{ungraded}")
     if np.isfinite(means).any():
         print(f"Mean squeeze force across experiments: {np.nanmean(means):.2f} N, "
               f"spread {np.nanmax(means) - np.nanmin(means):.2f} N (max - min)")

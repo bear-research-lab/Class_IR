@@ -18,6 +18,24 @@ There is nothing to hand in: each team presents its results at the final present
 with videos recorded by the scripts' `--video` option. Each handout lists what to show.
 **Reference video** of what each part looks like when it works: https://youtu.be/VN9uyTWR938
 
+## Teams, presentation and grading
+
+- **Teams of 2.** Register your team in the
+  [team sign-up sheet](https://docs.google.com/spreadsheets/d/1Q2o4G3NjTQ_vqX7dl_MiW7HPjyqbFRaqP_qcrm1l0n4/edit).
+  The team folder name you enter there is your `hands/<your-team>/`.
+- **Final presentation:** December 14 and 16, 14 teams, **10 minutes per team**.
+- **Grading (100 points):**
+
+| Part | What is graded | Points |
+|---|---|---|
+| 1. Forward kinematics | your own FK (NumPy) **and** the MuJoCo FK | 25 |
+| 2. Inverse kinematics | your own Jacobian and IK (NumPy) **and** the MuJoCo Jacobian | 25 |
+| 3. Pipetting hand: simulation | your `hand.xml` in MuJoCo and its `evaluate_hand.py` results | 25 |
+| 3. Pipetting hand: CAD | the 3D CAD design of your hand and its explanation (CAD is covered in a later lecture) | 25 |
+
+In Parts 1 and 2 you must do **both**: the kinematics you derive yourself and the same
+quantities from MuJoCo. One without the other is not complete.
+
 ## 1. Install
 
 You only need **uv**, which installs the right Python and all packages for you.
@@ -128,8 +146,7 @@ Every command accepts `--hand path/to/hand.xml`. Run any script with `--help` fo
 | `assets/` | RB5 robot model and the task scene |
 
 `layouts.md` holds the positions as Markdown tables (x and y in mm, in the robot base frame).
-At the final presentation you will get new positions in the same format:
-`uv run evaluate_hand.py --layouts final.md`.
+You can add your own layouts in the same format and run them with `--layouts my_layouts.md`.
 
 ## 6. Troubleshooting
 

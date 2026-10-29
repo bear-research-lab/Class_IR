@@ -157,10 +157,48 @@ DEFAULT_HAND = ASSETS.parent / "hands" / "basic" / "hand.xml"
 HAND_SITES = ("grasp",)
 HAND_ACTUATORS = ("gripper", "squeezer")
 HAND_NUMERICS = ("gripper_open", "gripper_close", "squeeze_release", "squeeze_press")
+# Rules of PART3_HAND.md section 5.
+HAND_MAX_FORCE = {"gripper": 20.0, "squeezer": 15.0}  # N (or N m) at the joint, after gear
+HAND_MAX_MASS = 1.0                                   # kg
+
+
+def _check_rules(path: Path) -> list[str]:
+    """Compile the hand on its own and check the rules. Compiling it alone also makes sure
+    it refers to nothing outside the hand (no welds or contact excludes with the pipette)."""
+    try:
+        m = mujoco.MjSpec.from_file(str(path)).compile()
+    except ValueError as e:
+        return [f"it must compile on its own and refer only to its own parts ({e})"]
+    errors = []
+    if m.nu != len(HAND_ACTUATORS):
+        errors.append(f"it has {m.nu} actuators; only 'gripper' and 'squeezer' are allowed")
+    for i in range(m.nu):
+        name = m.actuator(i).name
+        if name not in HAND_MAX_FORCE:
+            continue
+        if not m.actuator_forcelimited[i]:
+            errors.append(f"actuator '{name}' needs a forcerange")
+            continue
+        # A gear (or a fixed tendon coefficient) multiplies the force the joints feel.
+        gain = np.linalg.norm(m.actuator_gear[i])
+        if m.actuator_trntype[i] == mujoco.mjtTrn.mjTRN_TENDON:
+            t = m.actuator_trnid[i, 0]
+            adr, num = m.tendon_adr[t], m.tendon_num[t]
+            if m.wrap_type[adr] == mujoco.mjtWrap.mjWRAP_JOINT:
+                gain *= np.abs(m.wrap_prm[adr:adr + num]).max()
+        force = np.abs(m.actuator_forcerange[i]).max() * gain
+        if force > HAND_MAX_FORCE[name] + 1e-9:
+            errors.append(f"actuator '{name}' can apply {force:.1f} N (forcerange x gear); "
+                          f"the limit is {HAND_MAX_FORCE[name]:.0f} N")
+    mass = m.body_mass.sum()
+    if mass > HAND_MAX_MASS + 1e-9:
+        errors.append(f"the hand weighs {mass:.2f} kg; the limit is {HAND_MAX_MASS:.0f} kg")
+    return errors
 
 
 def load_hand(path: str | Path = DEFAULT_HAND) -> mujoco.MjSpec:
-    """Load a hand MJCF and check it provides the interface the controller uses."""
+    """Load a hand MJCF and check it provides the interface the controller uses and
+    follows the rules of PART3_HAND.md."""
     path = Path(path)
     if not path.is_file():
         raise FileNotFoundError(f"hand file not found: {path}")
@@ -173,6 +211,9 @@ def load_hand(path: str | Path = DEFAULT_HAND) -> mujoco.MjSpec:
         raise ValueError(f"{path} is missing: {', '.join(missing)} (see PART3_HAND.md)")
     if len(hand.worldbody.bodies) != 1:
         raise ValueError(f"{path}: the worldbody must contain exactly one (root) body, the hand")
+    errors = _check_rules(path)
+    if errors:
+        raise ValueError(f"{path} breaks the rules (PART3_HAND.md section 5): " + "; ".join(errors))
     return hand
 
 

@@ -65,7 +65,7 @@ All link frames are parallel when q = 0.
 The flange frame has z pointing out of the flange. At q = 0 the arm points straight up.
 
 You can chain these transforms directly or derive a Denavit–Hartenberg table from them;
-either is fine. Explain your choice in the report. Some values to check against:
+either is fine. Explain your choice in the presentation. Some values to check against:
 
 | q [deg] | flange position [m] | flange rotation |
 |---|---|---|

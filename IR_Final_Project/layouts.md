@@ -4,8 +4,8 @@ Positions are the object centers on the table, in the RB5 base frame
 (x forward, y to the robot's left), in millimeters. The robot only ever sees
 these nominal positions; the simulator adds the holder error (±5 mm, ±2°) on top.
 
-Replace these with the practice positions from the course, and add a new section
-for the positions given at the final presentation.
+You can add your own layouts in this format and run them with
+`uv run evaluate_hand.py --layouts my_layouts.md`.
 
 ## Practice 1
 

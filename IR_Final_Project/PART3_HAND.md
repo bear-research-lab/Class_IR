@@ -86,7 +86,7 @@ Your `hand.xml` is attached to the RB5 flange. It must contain:
 ```xml
 <custom>
   <numeric name="gripper_open"    data="0"/>
-  <numeric name="gripper_close"   data="0.033"/>
+  <numeric name="gripper_close"   data="0.03"/>
   <numeric name="squeeze_release" data="0"/>
   <numeric name="squeeze_press"   data="0.0275"/>
 </custom>
@@ -100,10 +100,16 @@ If something is missing, the scripts stop and list it.
 - **Two actuators only**: `gripper` and `squeezer`. Everything else must be passive: springs
   (`stiffness`), dampers, joint limits, equality constraints, tendons and contacts.
 - **Force limits**: `gripper` at most **20 N**, `squeezer` at most **15 N** (set `forcerange`).
+  This is the force at the joint: a `gear` or a tendon `coef` multiplies it.
 - **Hand mass** at most **1 kg** in total.
+- **Only the hand**: `hand.xml` may refer only to its own parts (no welds, contact pairs or
+  excludes with the pipette or the scene).
 - **Buildable**: every passive joint, spring and constraint must correspond to a real
-  mechanism (for example a linear guide plus a compression spring, or a flexure). Explain
-  each one in your report.
+  mechanism (for example a linear guide plus a compression spring, or a flexure), and your
+  3D CAD design must show it. Explain each one in your presentation.
+
+The scripts check the actuators, force limits, mass and "only the hand", and stop with a
+message if a rule is broken. Scores count only with the default `--motion-scale 1`.
 
 ## 6. How you are scored
 
@@ -131,9 +137,9 @@ reward = gate × exp(-(RMS force error / 0.5 N)²)
 |---|---|---|---|---|
 | Reward | 1.00 | 0.78 | 0.37 | 0.02 |
 
-**Your score is the mean reward.** The final evaluation uses seeds and layouts you have not
-seen, including the positions given live at the presentation, so design for the whole
-range and not for one seed.
+**Your score is the mean reward** over seeds 0-4 (`-n 5` each, 25 experiments), run with the
+default settings and shown in your presentation (section 8). Design for the whole range of
+pipettes and holder errors, not for one seed.
 
 The basic hand is a plain parallel gripper with flat fingers and a squeezer that always moves
 to the same position. It passes every check when the holder is exactly where the robot
@@ -172,7 +178,8 @@ basic hand doing the task (no holder error) is in the
 - Your design: how it absorbs the holder error (when grasping and when returning), how it
   handles different shaft diameters, and how it keeps the squeeze force consistent.
 - The real mechanism behind each simulated joint, spring and constraint.
+- Your **3D CAD design** of the hand (covered in a later lecture): its parts, which part
+  implements each passive joint and spring, and how the dimensions in `hand.xml` match the CAD.
 - Results: the `evaluate_hand.py` table for seeds 0-4 (`-n 5` each), your mean score, and one
   force-trace plot (`--plot`).
 - What still fails or scores low, and why.
-- A live run of `evaluate_hand.py` on the positions given at the presentation.

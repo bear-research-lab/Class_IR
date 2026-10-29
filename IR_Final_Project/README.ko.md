@@ -18,6 +18,23 @@ Rainbow Robotics RB5 협동로봇이 피펫팅 작업을 하는 MuJoCo 시뮬레
 옵션으로 녹화합니다. 보여 줄 내용은 각 파트 설명서에 있습니다.
 각 파트가 제대로 동작할 때의 **참고 영상**: https://youtu.be/VN9uyTWR938
 
+## 팀, 발표, 배점
+
+- **팀당 2명.** [팀 등록 시트](https://docs.google.com/spreadsheets/d/1Q2o4G3NjTQ_vqX7dl_MiW7HPjyqbFRaqP_qcrm1l0n4/edit)에
+  팀을 등록하세요. 시트에 적은 팀 폴더 이름이 여러분의 `hands/<팀이름>/`이 됩니다.
+- **최종 발표:** 12월 14일과 16일, 14팀, **팀당 10분**.
+- **배점 (100점):**
+
+| 파트 | 평가 내용 | 배점 |
+|---|---|---|
+| 1. 정기구학 | 직접 유도한 FK(NumPy) **와** MuJoCo FK | 25 |
+| 2. 역기구학 | 직접 유도한 Jacobian과 IK(NumPy) **와** MuJoCo Jacobian | 25 |
+| 3. 피펫팅 핸드: 시뮬레이션 | MuJoCo의 `hand.xml`과 `evaluate_hand.py` 결과 | 25 |
+| 3. 피펫팅 핸드: CAD | 핸드의 3D CAD 설계와 그 설명 (CAD는 다음 강의에서 다룹니다) | 25 |
+
+Part 1, 2는 **둘 다** 해야 합니다. 직접 유도한 기구학과, 같은 값을 MuJoCo로 구한 것입니다.
+하나만 하면 완성이 아닙니다.
+
 ## 1. 설치
 
 **uv** 하나만 설치하면 됩니다. 알맞은 Python 버전과 필요한 패키지를 uv가 모두 설치해 줍니다.
@@ -128,8 +145,7 @@ uv run evaluate_hand.py --hand hands/<팀이름>/hand.xml --seed 0
 | `assets/` | RB5 로봇 모델과 작업 장면 |
 
 `layouts.md`에는 위치가 Markdown 표로 들어 있습니다(로봇 베이스 기준 x, y, 단위 mm).
-최종 발표에서는 같은 형식으로 새 위치가 주어집니다:
-`uv run evaluate_hand.py --layouts final.md`.
+같은 형식으로 직접 배치를 추가하고 `--layouts my_layouts.md`로 실행할 수 있습니다.
 
 ## 6. 문제 해결
 

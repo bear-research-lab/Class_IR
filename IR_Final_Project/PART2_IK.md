@@ -102,6 +102,9 @@ uv run part2_ik.py trajectories/poses_example.txt --out my_joints.txt
   robot move uses your IK. Straight-line moves call it at every simulation step (every 2 ms)
   with **only 10 iterations**, so it must converge fast from a nearby start, not only
   eventually. The basic hand passes every check here when your IK is right.
+  It also has to be fast: a full task makes tens of thousands of IK calls. A finite-difference
+  Jacobian calls your FK 6 or more times per iteration, so the run can get several times
+  slower than with a geometric Jacobian.
 - **Playing a file:** the hand moves through the poses in straight lines (or with
   `--joint-space`, one IK solve per waypoint and joint interpolation). The viewer shows the
   targets (short axes) and your FK frame (long axes). The script prints the joint angles and
