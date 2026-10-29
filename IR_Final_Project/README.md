@@ -116,7 +116,7 @@ Every command accepts `--hand path/to/hand.xml`. Run any script with `--help` fo
 
 | Path | Contents |
 |---|---|
-| `PART1_FK.md`, `PART2_IK.md`, `PART3_HAND.md` | The three parts: what to do, rules, scoring, what to submit |
+| `PART1_FK.md`, `PART2_IK.md`, `PART3_HAND.md` | The three parts: what to do, rules, scoring, what to show at the final presentation |
 | `student_kinematics.py` | Your FK and IK (Parts 1 and 2) |
 | `trajectories/` | Example joint and pose files |
 | `hands/basic/` | The basic hand to start from (Part 3) |

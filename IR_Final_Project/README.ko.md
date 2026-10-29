@@ -116,7 +116,7 @@ uv run evaluate_hand.py --hand hands/<팀이름>/hand.xml --seed 0
 
 | 경로 | 내용 |
 |---|---|
-| `PART1_FK.ko.md`, `PART2_IK.ko.md`, `PART3_HAND.ko.md` | 세 파트의 설명: 할 일, 규칙, 채점, 제출물 |
+| `PART1_FK.ko.md`, `PART2_IK.ko.md`, `PART3_HAND.ko.md` | 세 파트의 설명: 할 일, 규칙, 채점, 최종 발표에서 보여 줄 것 |
 | `student_kinematics.py` | 여러분의 FK와 IK (Part 1, 2) |
 | `trajectories/` | 관절 각도 파일과 자세 파일 예시 |
 | `hands/basic/` | 시작점이 되는 기본 핸드 (Part 3) |
