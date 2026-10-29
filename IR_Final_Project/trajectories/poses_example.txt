@@ -1,0 +1,14 @@
+# Part 2 example: the hand's grasp point in mm (robot base frame) and its orientation as
+# ZYZ Euler angles in degrees, R = Rz(alpha) Ry(beta) Rz(gamma). T is the time [s].
+# Lines without alpha/beta/gamma use the task orientation (0, 90, 180): hand pointing
+# forward (+x), pipette axis vertical.
+T:0  x:400 y:0    z:350
+T:2  x:450 y:-100 z:350
+T:4  x:450 y:100  z:350
+T:6  x:350 y:100  z:350
+T:8  x:350 y:-100 z:350
+T:10 x:400 y:0    z:350
+T:12 x:400 y:0    z:250
+T:14 x:400 y:0    z:250 alpha:30  beta:90 gamma:180
+T:16 x:400 y:0    z:300 alpha:-30 beta:70 gamma:180
+T:18 x:400 y:0    z:350 alpha:0   beta:90 gamma:180

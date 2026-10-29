@@ -1,0 +1,8 @@
+# Part 1 example: joint angles in degrees. T is the time [s] the robot reaches each line.
+# The first line is the start (the home pose, hand pointing forward).
+T:0  theta1:31.27 theta2:-28.19 theta3:130.43 theta4:77.76 theta5:-58.73 theta6:90
+T:2  theta1:0     theta2:-28.19 theta3:130.43 theta4:77.76 theta5:-58.73 theta6:90
+T:4  theta1:0     theta2:-10    theta3:100    theta4:80    theta5:-90    theta6:90
+T:6  theta1:-30   theta2:-10    theta3:100    theta4:80    theta5:-90    theta6:45
+T:8  theta1:-30   theta2:-40    theta3:120    theta4:10    theta5:-90    theta6:45
+T:10 theta1:31.27 theta2:-28.19 theta3:130.43 theta4:77.76 theta5:-58.73 theta6:90

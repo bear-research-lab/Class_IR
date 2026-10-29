@@ -1,0 +1,99 @@
+<!--
+  Basic pipetting hand: the starting point for the hand design challenge.
+
+  A plain parallel gripper. It works when the pipette is exactly where the robot
+  expects it, and has nothing that absorbs the holder pose error or the variation
+  in pipette thickness. Improving that is your job (see PART3_HAND.md).
+
+  Hand frame (attached to the RB5 flange):
+    z: approach direction (out of the flange)
+    x: pipette axis, pointing from the tip toward the bulb
+    y: finger closing direction
+
+  - Two flat fingers on rigid slides, coupled so they close symmetrically about
+    the hand's centerline. Their contact faces are 30 mm tall.
+  - Two flat bulb pads, 70 mm above the finger center, also coupled. The squeezer
+    moves them to a fixed position, whatever the bulb size.
+-->
+<mujoco model="basic_hand">
+  <compiler angle="radian" autolimits="true"/>
+
+  <default>
+    <default class="hand">
+      <geom contype="0" conaffinity="0" group="2" rgba="0.55 0.57 0.6 1"/>
+      <default class="pad">
+        <geom type="box" contype="1" conaffinity="1" condim="4" friction="1.5 0.02 0.001"
+              solref="0.004 1" rgba="0.2 0.2 0.22 1"/>
+      </default>
+      <default class="finger">
+        <joint type="slide" range="0 0.03" damping="100" armature="0.01"/>
+      </default>
+      <default class="bulb_pad">
+        <joint type="slide" range="0 0.028" damping="40" armature="0.05"/>
+      </default>
+    </default>
+  </default>
+
+  <worldbody>
+    <body name="hand" childclass="hand">
+      <inertial pos="0 0 0.04" mass="0.5" diaginertia="0.0008 0.0008 0.0005"/>
+      <!-- flange adapter, palm and a rail that carries the fingers and pads -->
+      <geom type="cylinder" size="0.04 0.01" pos="0 0 0.01"/>
+      <geom type="box" size="0.06 0.045 0.012" pos="0.03 0 0.032"/>
+      <geom type="box" size="0.012 0.045 0.006" pos="0 0 0.05"/>
+      <geom type="box" size="0.012 0.045 0.006" pos="0.07 0 0.05"/>
+      <!-- control point: center between the fingers -->
+      <site name="grasp" pos="0 0 0.09" size="0.004" rgba="1 0 0 1" group="1"/>
+
+      <!-- fingers: flat 30 mm x 20 mm pads; the inner face is 30 mm off center when open -->
+      <body name="finger_l" pos="0 0 0.09">
+        <inertial pos="0 0.035 -0.02" mass="0.04" diaginertia="8e-6 8e-6 8e-6"/>
+        <joint name="finger_l" class="finger" axis="0 -1 0"/>
+        <geom type="box" size="0.015 0.004 0.03" pos="0 0.037 -0.02"/>
+        <geom class="pad" size="0.015 0.003 0.01" pos="0 0.033 0"/>
+      </body>
+      <body name="finger_r" pos="0 0 0.09">
+        <inertial pos="0 -0.035 -0.02" mass="0.04" diaginertia="8e-6 8e-6 8e-6"/>
+        <joint name="finger_r" class="finger" axis="0 1 0"/>
+        <geom type="box" size="0.015 0.004 0.03" pos="0 -0.037 -0.02"/>
+        <geom class="pad" size="0.015 0.003 0.01" pos="0 -0.033 0"/>
+      </body>
+
+      <!-- bulb pads, 70 mm up the pipette axis from the grasp point -->
+      <body name="bulb_pad_l" pos="0.07 0 0.09">
+        <inertial pos="0 0.035 -0.02" mass="0.02" diaginertia="3e-6 3e-6 3e-6"/>
+        <joint name="bulb_pad_l" class="bulb_pad" axis="0 -1 0"/>
+        <geom type="box" size="0.012 0.004 0.03" pos="0 0.037 -0.02"/>
+        <geom class="pad" size="0.012 0.003 0.012" pos="0 0.033 0" rgba="0.85 0.45 0.2 1"/>
+      </body>
+      <body name="bulb_pad_r" pos="0.07 0 0.09">
+        <inertial pos="0 -0.035 -0.02" mass="0.02" diaginertia="3e-6 3e-6 3e-6"/>
+        <joint name="bulb_pad_r" class="bulb_pad" axis="0 1 0"/>
+        <geom type="box" size="0.012 0.004 0.03" pos="0 -0.037 -0.02"/>
+        <geom class="pad" size="0.012 0.003 0.012" pos="0 -0.033 0" rgba="0.85 0.45 0.2 1"/>
+      </body>
+    </body>
+  </worldbody>
+
+  <!-- ctrl values the controller sends (see the actuators below for their meaning) -->
+  <custom>
+    <numeric name="gripper_open" data="0"/>
+    <!-- fully closed; the fingers stop on the shaft and the grip force is the force limit -->
+    <numeric name="gripper_close" data="0.03"/>
+    <numeric name="squeeze_release" data="0"/>
+    <!-- pads touch a 9 mm-radius bulb at 0.021; 6.5 mm further squeezes it -->
+    <numeric name="squeeze_press" data="0.0275"/>
+  </custom>
+
+  <equality>
+    <joint joint1="finger_r" joint2="finger_l" polycoef="0 1 0 0 0" solref="0.005 1"/>
+    <joint joint1="bulb_pad_r" joint2="bulb_pad_l" polycoef="0 1 0 0 0" solref="0.005 1"/>
+  </equality>
+
+  <actuator>
+    <!-- ctrl = finger travel (m); 0 = open, 0.03 = closed. forcerange = grip force. -->
+    <position name="gripper" joint="finger_l" kp="5000" dampratio="1" ctrlrange="0 0.03" forcerange="-10 10"/>
+    <!-- ctrl = pad travel (m); 0 = released. Position-controlled: the bulb's springs set the force. -->
+    <position name="squeezer" joint="bulb_pad_l" kp="5000" dampratio="1" ctrlrange="0 0.028" forcerange="-15 15"/>
+  </actuator>
+</mujoco>
