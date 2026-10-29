@@ -14,6 +14,10 @@ has three parts; each one builds on the one before:
 The robot moves with your kinematics: every move calls your `forward_kinematics()` and
 `inverse_kinematics()`. So the pipetting task (Part 3) runs only once Parts 1 and 2 work.
 
+There is nothing to hand in: each team presents its results at the final presentation,
+with videos recorded by the scripts' `--video` option. Each handout lists what to show.
+**Reference video** of what each part looks like when it works: https://youtu.be/VN9uyTWR938
+
 ## 1. Install
 
 You only need **uv**, which installs the right Python and all packages for you.
@@ -99,6 +103,7 @@ uv run evaluate_hand.py --hand hands/<your-team>/hand.xml --seed 0
 | `... --playback 0.5` | Slow motion in the viewer (same physics) |
 | `... --headless` | No window; prints the checks and a force summary |
 | `... --headless --plot run.png --csv run.csv` | Save a force plot and the force log |
+| `... --video run.mp4` | Record the run as a video (also in `part1_fk.py FILE`, `part2_ik.py FILE` and `part2_ik.py --task`) |
 | `... --layout "Practice 2"` | Use another layout from `layouts.md` |
 | `... --graph overlay` / `none` | Graphs inside the viewer, or no graphs |
 | `uv run evaluate_hand.py --seed 0` | Score the hand: 5 experiments with random pipette sizes and holder errors |

@@ -4,6 +4,7 @@ version = "1.0.0"
 description = "RB5 pipetting hand design challenge in MuJoCo"
 requires-python = ">=3.12"
 dependencies = [
+    "imageio[ffmpeg]>=2.37",
     "matplotlib>=3.11.2",
     "mujoco>=3.17.0",
 ]

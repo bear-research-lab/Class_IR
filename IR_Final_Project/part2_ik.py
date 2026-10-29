@@ -20,6 +20,8 @@ Examples:
   uv run part2_ik.py trajectories/poses_example.txt          # play a pose file in the viewer
   uv run part2_ik.py trajectories/poses_example.txt --joint-space   # one IK solve per waypoint
   uv run part2_ik.py trajectories/poses_example.txt --out my_joints.txt   # save the joint angles (a Part 1 input)
+  uv run part2_ik.py my_poses.txt --headless --video part2.mp4           # record a video for the presentation
+  uv run part2_ik.py --task --headless --video task.mp4                  # record the pipetting task
 """
 
 import argparse
@@ -34,7 +36,7 @@ from rb5_sim.controller import HAND_FORWARD, HOME_Q, RB5, ViewerClosed, mat_to_q
 from rb5_sim.env import HOLDER_SEAT_Z, HolderError
 from rb5_sim.kinematics import DEFAULT_KINEMATICS, forbidden_imports, load_kinematics, read_pose_file, write_joint_file
 from rb5_sim.layout_md import load_layouts
-from rb5_sim.playback import FrameMarkers, open_robot, wait_for_close
+from rb5_sim.playback import FrameMarkers, open_robot, recording, wait_for_close
 from rb5_sim.task import APPROACH_DISTANCE, ASPIRATE_TIP_Z, DISPENSE_TIP_Z, TRANSIT_TIP_Z, tip_at
 
 PASS_ERROR = 1e-4      # same threshold the controller uses for joint-space moves
@@ -115,17 +117,26 @@ def run_test(robot: RB5, layouts: dict, n: int, seed: int, verbose: bool) -> boo
     return all(r["passed"] for r in random_results + task_results)
 
 
-def play(robot: RB5, viewer, path: Path, joint_space: bool, out: Path | None) -> None:
+def play(robot: RB5, viewer, path: Path, joint_space: bool, out: Path | None, video: Path | None) -> None:
     waypoints = read_pose_file(path)
     targets = [(wp.value[:3, 3], wp.value[:3, :3]) for wp in waypoints]
-    if viewer is not None:
-        segments = [(a[0], b[0]) for a, b in zip(targets, targets[1:])]
-        robot.sim.callbacks.append(FrameMarkers(viewer, robot, frames=targets, segments=segments))
+    segments = [(a[0], b[0]) for a, b in zip(targets, targets[1:])]
+    markers = FrameMarkers(robot, viewer, frames=targets, segments=segments)
+    robot.sim.callbacks.append(markers)
 
     q0, err = robot.ik(*targets[0], HOME_Q, max_iters=1000)
     if err > PASS_ERROR:
         raise SystemExit(f"IK failed for the first pose in {path} (line {waypoints[0].line}): error {err:.2e}")
     robot.reset(q0)
+    with recording(robot, video, markers):
+        rows = _play(robot, path, waypoints, targets, joint_space)
+    if out:
+        write_joint_file(out, rows, f"Joint angles from your inverse_kinematics() for {path.name}.\n"
+                                    "Input for Part 1: uv run part1_fk.py " + str(out))
+        print(f"\nJoint angles saved to {out} (try: uv run part1_fk.py {out})")
+
+
+def _play(robot: RB5, path: Path, waypoints, targets, joint_space: bool) -> list:
     print(f"{len(waypoints)} waypoints from {path}, {'joint-space' if joint_space else 'straight-line'} moves\n")
     print(f"{'T [s]':>6}  {'joint angles [deg]':>44}  {'reached error (simulator)':>26}")
     rows, prev_t = [], waypoints[0].t
@@ -141,10 +152,7 @@ def play(robot: RB5, viewer, path: Path, joint_space: bool, out: Path | None) ->
         print(f"{wp.t:6.2f}  {' '.join(f'{a:7.1f}' for a in np.degrees(robot.q_cmd)):>44}  "
               f"{np.linalg.norm(err[:3]) * 1e3:9.3f} mm {np.degrees(np.linalg.norm(err[3:])):7.3f} deg")
         rows.append((wp.t, robot.q_cmd.copy()))
-    if out:
-        write_joint_file(out, rows, f"Joint angles from your inverse_kinematics() for {path.name}.\n"
-                                    "Input for Part 1: uv run part1_fk.py " + str(out))
-        print(f"\nJoint angles saved to {out} (try: uv run part1_fk.py {out})")
+    return rows
 
 
 def main() -> None:
@@ -155,6 +163,7 @@ def main() -> None:
     parser.add_argument("--out", type=Path, help="with a file: save the joint angles at each waypoint")
     parser.add_argument("--task", action="store_true", help="test: then run the pipetting task with the basic hand")
     parser.add_argument("--headless", action="store_true", help="no viewer (with a file or --task)")
+    parser.add_argument("--video", type=Path, help="record the file playback or the --task run to this MP4 file")
     parser.add_argument("--playback", type=float, default=1.0, help="viewer playback speed, e.g. 0.5")
     parser.add_argument("-n", type=int, default=50, help="test: number of random targets (default 50)")
     parser.add_argument("--seed", type=int, default=0, help="test: random seed (default 0)")
@@ -171,7 +180,7 @@ def main() -> None:
     try:
         if args.file is not None:
             with open_robot(kin, viewer=not args.headless, layouts=args.layouts, playback=args.playback) as (robot, v):
-                play(robot, v, args.file, args.joint_space, args.out)
+                play(robot, v, args.file, args.joint_space, args.out, args.video)
                 wait_for_close(robot, v)
             return
 
@@ -183,7 +192,7 @@ def main() -> None:
             print(f"\nPipetting task with your IK and the basic hand (layout '{name}', no holder error)")
             try:
                 report, _ = run_trial(layout, HolderError(), viewer=not args.headless, verbose=False,
-                                      playback=args.playback, kinematics=kin)
+                                      playback=args.playback, kinematics=kin, video=args.video)
             except RuntimeError as e:
                 raise SystemExit(f"Task stopped: {e}")
             if args.headless:

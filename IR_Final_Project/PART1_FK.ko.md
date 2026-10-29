@@ -79,9 +79,13 @@ uv run part1_fk.py trajectories/joints_example.txt --out my_poses.txt   # FK 결
   여러분의 FK 위치, 시뮬레이터의 위치, 그 오차가 출력됩니다.
 - `--out`은 FK 결과를 자세 파일로 저장합니다. 이 파일은 Part 2의 입력 형식입니다.
 
-## 5. 제출물
+## 5. 최종 발표
 
-- `student_kinematics.py`
-- `uv run part1_fk.py`의 출력
-- 경유점이 5개 이상인 직접 만든 관절 각도 파일, 그리고 그 파일을 `--out`과 함께 재생한 출력
-- 보고서: 기구학 모델(변환 체인 또는 DH 표)과 좌표계를 그린 그림
+제출할 파일은 없습니다. 팀별로 발표하며, Part 1에서는 다음을 보여 주세요.
+
+- 경유점이 5개 이상인 직접 만든 관절 각도 파일의 **영상**:
+  `uv run part1_fk.py my_joints.txt --headless --video part1.mp4`로 녹화합니다. 동작하는 내내
+  여러분의 FK 좌표계가 핸드 위에 붙어 있어야 합니다. 참고: [이렇게 보여야 합니다](https://youtu.be/VN9uyTWR938)
+  (참고 영상은 예시 파일을 재생한 것이니, 여러분이 만든 파일로 녹화하세요).
+- 채점용 테스트 결과 (`uv run part1_fk.py`).
+- 기구학 모델(변환 체인 또는 DH 표)과 좌표계를 그린 그림.

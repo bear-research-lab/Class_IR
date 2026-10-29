@@ -14,6 +14,10 @@ Rainbow Robotics RB5 협동로봇이 피펫팅 작업을 하는 MuJoCo 시뮬레
 로봇은 여러분의 기구학으로 움직입니다. 모든 동작이 여러분의 `forward_kinematics()`와
 `inverse_kinematics()`를 호출하므로, 피펫팅 작업(Part 3)은 Part 1, 2가 동작해야 실행됩니다.
 
+제출할 파일은 없습니다. 팀별로 최종 발표에서 결과를 보여 주며, 영상은 스크립트의 `--video`
+옵션으로 녹화합니다. 보여 줄 내용은 각 파트 설명서에 있습니다.
+각 파트가 제대로 동작할 때의 **참고 영상**: https://youtu.be/VN9uyTWR938
+
 ## 1. 설치
 
 **uv** 하나만 설치하면 됩니다. 알맞은 Python 버전과 필요한 패키지를 uv가 모두 설치해 줍니다.
@@ -99,6 +103,7 @@ uv run evaluate_hand.py --hand hands/<팀이름>/hand.xml --seed 0
 | `... --playback 0.5` | 뷰어에서 슬로 모션 (물리는 동일) |
 | `... --headless` | 창 없이 실행, 검사 결과와 힘 요약을 출력 |
 | `... --headless --plot run.png --csv run.csv` | 힘 그래프와 힘 기록 저장 |
+| `... --video run.mp4` | 실행 과정을 영상으로 녹화 (`part1_fk.py 파일`, `part2_ik.py 파일`, `part2_ik.py --task`에서도 사용 가능) |
 | `... --layout "Practice 2"` | `layouts.md`의 다른 배치 사용 |
 | `... --graph overlay` / `none` | 그래프를 뷰어 안에 표시, 또는 표시 안 함 |
 | `uv run evaluate_hand.py --seed 0` | 핸드 채점: 피펫 크기와 홀더 오차가 무작위인 실험 5회 |

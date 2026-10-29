@@ -12,11 +12,13 @@ Examples:
   uv run pipetting.py --graph overlay              # live graphs inside the viewer instead of a window
   uv run pipetting.py --playback 0.5               # watch in slow motion (same physics)
   uv run pipetting.py --hand hands/team1/hand.xml  # test another hand design
+  uv run pipetting.py --hand hands/team1/hand.xml --seed 3 --headless --video part3.mp4   # record a video
 
 The robot moves with your kinematics from student_kinematics.py, so this needs Parts 1 and 2.
 """
 
 import argparse
+from contextlib import nullcontext
 from pathlib import Path
 
 import mujoco
@@ -29,11 +31,17 @@ from rb5_sim.forces import ForceMonitor
 from rb5_sim.kinematics import DEFAULT_KINEMATICS, load_kinematics
 from rb5_sim.layout_md import load_layouts
 from rb5_sim.task import Probe, run_pipetting
+from rb5_sim.video import VideoRecorder
 from rb5_sim.viewer_plots import GraphWindow, ViewerOverlay
 
 
+def _record(model, video: Path | None):
+    return VideoRecorder(model, video) if video else nullcontext()
+
+
 def run_trial(layout, error, viewer: bool, verbose: bool, graph: str = "window", hand=DEFAULT_HAND,
-              playback: float = 1.0, motion_scale: float = 1.0, kinematics=None):
+              playback: float = 1.0, motion_scale: float = 1.0, kinematics=None, video: Path | None = None):
+    """video: also record the run to this MP4 file."""
     model = build_model(layout, error, hand=hand)
     data = mujoco.MjData(model)
     forces = ForceMonitor(model)
@@ -44,7 +52,10 @@ def run_trial(layout, error, viewer: bool, verbose: bool, graph: str = "window",
         sim.callbacks.append(forces)
         robot = RB5(sim, time_scale=motion_scale, kinematics=kinematics)
         robot.reset()
-        return run_pipetting(robot, layout, Probe(model, data, forces), log), forces
+        with _record(model, video) as rec:
+            if rec:
+                sim.callbacks.append(rec)
+            return run_pipetting(robot, layout, Probe(model, data, forces), log), forces
 
     graph_window = GraphWindow(model, forces) if graph == "window" else None
     with mujoco.viewer.launch_passive(model, data) as v:
@@ -56,7 +67,10 @@ def run_trial(layout, error, viewer: bool, verbose: bool, graph: str = "window",
         robot = RB5(sim, time_scale=motion_scale, kinematics=kinematics)
         robot.reset()
         v.sync()
-        report = run_pipetting(robot, layout, Probe(model, data, forces), log)
+        with _record(model, video) as rec:
+            if rec:
+                sim.callbacks.append(rec)
+            report = run_pipetting(robot, layout, Probe(model, data, forces), log)
         forces.phase = "finished"
         print(report)
         print(forces.summary())
@@ -109,10 +123,13 @@ def main() -> None:
     parser.add_argument("--trials", type=int, default=1, help="number of random trials (headless)")
     parser.add_argument("--plot", type=Path, help="save a force plot of the (last) trial, e.g. forces.png")
     parser.add_argument("--csv", type=Path, help="save the force log of the (last) trial as CSV")
+    parser.add_argument("--video", type=Path, help="record the run to this MP4 file (one trial only)")
     parser.add_argument("--graph", choices=("window", "overlay", "none"), default="window",
                         help="live force/z graphs: own window (default), inside the viewer, or none")
     add_common_args(parser)
     args = parser.parse_args()
+    if args.video and args.trials != 1:
+        parser.error("--video records a single trial; drop --trials")
 
     kinematics = kinematics_from_args(args)
     name, layout = pick_layout(load_layouts(args.layouts), args.layout)
@@ -126,7 +143,8 @@ def main() -> None:
         try:
             report, forces = run_trial(layout, error, viewer=not args.headless, verbose=args.trials == 1,
                                        graph=args.graph, hand=args.hand, playback=args.playback,
-                                       motion_scale=args.motion_scale, kinematics=kinematics)
+                                       motion_scale=args.motion_scale, kinematics=kinematics,
+                                       video=args.video)
         except ViewerClosed:
             print("Viewer closed.")
             return

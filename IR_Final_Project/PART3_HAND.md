@@ -107,9 +107,6 @@ If something is missing, the scripts stop and list it.
 
 ## 6. How you are scored
 
-Part 3 scores the hand only. For the grade, your hand is run with the instructor's reference
-kinematics, so a problem in your IK doesn't cost Part 3 points (Part 2 grades the IK).
-
 ```
 uv run evaluate_hand.py --hand hands/<your-team>/hand.xml --seed 0
 ```
@@ -163,13 +160,19 @@ uv run pipetting.py --hand hands/<team>/hand.xml --headless --plot run.png --csv
 When a check fails, the printout says which one and why (for example tip position error in mm).
 The force summary shows grip, bulb and environment forces for each task phase.
 
-## 8. What to submit
+## 8. Final presentation
 
-1. `hands/<your-team>/` with `hand.xml` and any meshes.
-2. A short report (2-4 pages):
-   - Your design: how it absorbs the holder error (when grasping and when returning), how it
-     handles different shaft diameters, and how it keeps the squeeze force consistent.
-   - The real mechanism behind each simulated joint, spring and constraint.
-   - Results: the `evaluate_hand.py` table for seeds 0-4 (`-n 5` each), your mean score,
-     and one force-trace plot (`--plot`).
-   - What still fails or scores low, and why.
+There is nothing to hand in. Each team presents, and for Part 3 shows the following. The
+basic hand doing the task (no holder error) is in the
+[reference video](https://youtu.be/VN9uyTWR938?t=38).
+
+- **Videos** of your hand doing the task with a holder error, including at least one seed
+  where the basic hand fails, recorded with
+  `uv run pipetting.py --hand hands/<your-team>/hand.xml --seed 3 --headless --video part3.mp4`.
+- Your design: how it absorbs the holder error (when grasping and when returning), how it
+  handles different shaft diameters, and how it keeps the squeeze force consistent.
+- The real mechanism behind each simulated joint, spring and constraint.
+- Results: the `evaluate_hand.py` table for seeds 0-4 (`-n 5` each), your mean score, and one
+  force-trace plot (`--plot`).
+- What still fails or scores low, and why.
+- A live run of `evaluate_hand.py` on the positions given at the presentation.

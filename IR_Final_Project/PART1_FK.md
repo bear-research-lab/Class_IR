@@ -81,10 +81,13 @@ uv run part1_fk.py trajectories/joints_example.txt --out my_poses.txt   # save y
   simulator's and the error.
 - `--out` saves your FK result as a pose file: the input format of Part 2.
 
-## 5. Submit
+## 5. Final presentation
 
-- `student_kinematics.py`
-- The output of `uv run part1_fk.py`
-- Your own joint file with at least 5 waypoints, and the output of playing it with `--out`
-- In the report: your kinematic model (transform chain or DH table) with a figure of the
-  frames
+There is nothing to hand in. Each team presents, and for Part 1 shows:
+
+- **A video** of your own joint file (at least 5 waypoints), recorded with
+  `uv run part1_fk.py my_joints.txt --headless --video part1.mp4`. Your FK frame must stay on
+  the hand for the whole motion. Reference: [what it should look like](https://youtu.be/VN9uyTWR938)
+  (that video plays the example file; show your own).
+- The result of the graded test (`uv run part1_fk.py`).
+- Your kinematic model (transform chain or DH table) with a figure of the frames.

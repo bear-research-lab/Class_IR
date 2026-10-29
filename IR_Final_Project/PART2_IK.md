@@ -80,11 +80,16 @@ uv run part2_ik.py trajectories/poses_example.txt --out my_joints.txt
   targets (short axes) and your FK frame (long axes). The script prints the joint angles and
   the reached error at every waypoint.
 
-## 4. Submit
+## 4. Final presentation
 
-- `student_kinematics.py`
-- The output of `uv run part2_ik.py --task --headless`
-- Your own pose file with at least 5 waypoints, and the output of playing it
-- In the report: your Jacobian and update rule, the values of λ, step limit and tolerance,
-  and what happens when you change them (for example near a singular pose, or with too few
-  iterations)
+There is nothing to hand in. Each team presents, and for Part 2 shows:
+
+- **A video** of your own pose file (at least 5 waypoints, including some orientation
+  changes), recorded with `uv run part2_ik.py my_poses.txt --headless --video part2.mp4`.
+  Reference: [what it should look like](https://youtu.be/VN9uyTWR938?t=10) (that video plays the
+  example file; show your own).
+- **A video** of the pipetting task with the basic hand and your IK, recorded with
+  `uv run part2_ik.py --task --headless --video task.mp4`.
+- The result of the graded test (`uv run part2_ik.py`).
+- Your Jacobian and update rule, the values of λ, step limit and tolerance, and what happens
+  when you change them (for example near a singular pose, or with too few iterations).

@@ -14,6 +14,7 @@ Examples:
   uv run part1_fk.py trajectories/joints_example.txt          # play a joint file in the viewer
   uv run part1_fk.py trajectories/joints_example.txt --headless
   uv run part1_fk.py trajectories/joints_example.txt --out my_poses.txt   # save your FK poses (a Part 2 input)
+  uv run part1_fk.py my_joints.txt --headless --video part1.mp4          # record a video for the presentation
 """
 
 import argparse
@@ -24,7 +25,7 @@ import numpy as np
 from rb5_sim.controller import RB5, ViewerClosed
 from rb5_sim.kinematics import (DEFAULT_KINEMATICS, forbidden_imports, load_kinematics, pose_matrix,
                                 read_joint_file, write_pose_file)
-from rb5_sim.playback import FrameMarkers, open_robot, wait_for_close
+from rb5_sim.playback import FrameMarkers, open_robot, recording, wait_for_close
 
 PASS_POS = 1e-6   # m
 PASS_ROT = 1e-6   # rad
@@ -72,29 +73,51 @@ def run_test(robot: RB5, n: int, seed: int, verbose: bool) -> bool:
     return all_passed
 
 
-def play(robot: RB5, viewer, path: Path, out: Path | None) -> None:
+def fk_ready(robot: RB5) -> bool:
+    try:
+        robot.fk(np.zeros(6))
+    except NotImplementedError:
+        return False
+    return True
+
+
+def play(robot: RB5, viewer, path: Path, out: Path | None, video: Path | None) -> None:
     waypoints = read_joint_file(path)
-    if viewer is not None:
-        robot.sim.callbacks.append(FrameMarkers(viewer, robot))
+    show_fk = fk_ready(robot)
+    if not show_fk:
+        print("forward_kinematics() is not implemented yet: the robot moves, but there is no FK to show.\n")
+    markers = FrameMarkers(robot, viewer, show_fk=show_fk)
+    robot.sim.callbacks.append(markers)
     robot.reset(waypoints[0].value)
+    with recording(robot, video, markers):
+        rows = _play(robot, path, waypoints, show_fk)
+    if out and not show_fk:
+        print(f"\nNo FK poses to save to {out}: implement forward_kinematics() first.")
+    elif out:
+        write_pose_file(out, rows, f"Grasp-site poses from your forward_kinematics() for {path.name}.\n"
+                                   "Input for Part 2: uv run part2_ik.py " + str(out))
+        print(f"\nYour FK poses saved to {out} (try: uv run part2_ik.py {out})")
+
+
+def _play(robot: RB5, path: Path, waypoints, show_fk: bool) -> list:
     print(f"{len(waypoints)} waypoints from {path}\n")
     print(f"{'T [s]':>6}  {'your FK x, y, z [mm]':>26}  {'simulator x, y, z [mm]':>26}  {'error':>17}")
+    fmt = lambda p: ", ".join(f"{v * 1e3:7.1f}" for v in p)  # noqa: E731
     rows, prev_t = [], waypoints[0].t
     for wp in waypoints:
         if wp is not waypoints[0]:
             robot.move_joints(wp.value, duration=wp.t - prev_t, settle=0.0)
             prev_t = wp.t
-        pos, rot = robot.fk(wp.value)
         true_pos, true_rot = robot.sim_fk(wp.value)
+        if not show_fk:
+            print(f"{wp.t:6.2f}  {'(not implemented)':>26}  {fmt(true_pos):>26}")
+            continue
+        pos, rot = robot.fk(wp.value)
         dr = np.degrees(np.arccos(np.clip((np.trace(rot @ true_rot.T) - 1) / 2, -1, 1)))
-        fmt = lambda p: ", ".join(f"{v * 1e3:7.1f}" for v in p)  # noqa: E731
         print(f"{wp.t:6.2f}  {fmt(pos):>26}  {fmt(true_pos):>26}  "
               f"{np.linalg.norm(pos - true_pos) * 1e3:6.2f} mm {dr:5.2f} deg")
         rows.append((wp.t, pose_matrix(pos, rot)))
-    if out:
-        write_pose_file(out, rows, f"Grasp-site poses from your forward_kinematics() for {path.name}.\n"
-                                   "Input for Part 2: uv run part2_ik.py " + str(out))
-        print(f"\nYour FK poses saved to {out} (try: uv run part2_ik.py {out})")
+    return rows
 
 
 def main() -> None:
@@ -102,6 +125,7 @@ def main() -> None:
     parser.add_argument("file", type=Path, nargs="?", help="joint file to play (omit for the graded test)")
     parser.add_argument("--out", type=Path, help="with a file: save your FK poses as a pose file")
     parser.add_argument("--headless", action="store_true", help="with a file: no viewer")
+    parser.add_argument("--video", type=Path, help="with a file: record the run to this MP4 file")
     parser.add_argument("--playback", type=float, default=1.0, help="viewer playback speed, e.g. 0.5")
     parser.add_argument("-n", type=int, default=100, help="test: random joint angles per case (default 100)")
     parser.add_argument("--seed", type=int, default=0, help="test: random seed (default 0)")
@@ -119,7 +143,7 @@ def main() -> None:
                 ok = run_test(robot, args.n, args.seed, args.verbose)
                 print(f"\nPart 1 {'PASSED' if ok else 'FAILED'}")
                 return
-            play(robot, v, args.file, args.out)
+            play(robot, v, args.file, args.out, args.video)
             wait_for_close(robot, v)
     except NotImplementedError as e:
         raise SystemExit(f"Not implemented yet: {e}")
