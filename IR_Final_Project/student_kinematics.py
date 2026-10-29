@@ -1,10 +1,11 @@
 """Parts 1 and 2: forward and inverse kinematics of the RB5 (your code goes here).
 
-Part 1: forward_kinematics()    test: uv run part1_fk.py
-Part 2: inverse_kinematics()    test: uv run part2_ik.py
+Part 1: forward_kinematics()                  test: uv run part1_fk.py
+Part 2: jacobian(), inverse_kinematics()      test: uv run part2_ik.py
 
-The robot controller calls these two functions for every move, so the pipetting task
-(Part 3) runs on your kinematics.
+The robot controller calls forward_kinematics() and inverse_kinematics() for every move,
+so the pipetting task (Part 3) runs on your kinematics. In student_mujoco.py you compute
+the same FK and Jacobian with MuJoCo's functions, and the tests compare the two.
 
 Rules: use NumPy only. Don't import mujoco or rb5_sim in this file. You may add your own
 helper functions. Don't change the function signatures or the provided helpers.
@@ -66,7 +67,19 @@ def forward_kinematics(q: np.ndarray, tool: np.ndarray = np.eye(4)) -> np.ndarra
     raise NotImplementedError("Part 1: implement forward_kinematics() in student_kinematics.py")
 
 
-# ---- Part 2: inverse kinematics ------------------------------------------------------
+# ---- Part 2: Jacobian and inverse kinematics -----------------------------------------
+
+def jacobian(q: np.ndarray, tool: np.ndarray = np.eye(4)) -> np.ndarray:
+    """Geometric Jacobian of the tool frame at joint angles q.
+
+    Returns the (6, 6) Jacobian: rows 0-2 linear velocity of the tool frame origin, rows 3-5
+    angular velocity, both in the base frame; column i is joint i.
+    """
+    # TODO: from the joint axes and joint positions of your forward kinematics (geometric),
+    # or by finite differences of forward_kinematics() (numerical; for the angular rows use
+    # the rotation_vector() of the change in orientation).
+    raise NotImplementedError("Part 2: implement jacobian() in student_kinematics.py")
+
 
 def inverse_kinematics(target: np.ndarray, q_init: np.ndarray, tool: np.ndarray = np.eye(4),
                        max_iters: int = 200, tol: float = 1e-6) -> tuple[np.ndarray, float]:
@@ -86,7 +99,7 @@ def inverse_kinematics(target: np.ndarray, q_init: np.ndarray, tool: np.ndarray 
     # TODO: implement an iterative IK solver, e.g. damped least squares:
     #   1. current pose: forward_kinematics(q, tool)
     #   2. 6D error: pose_error(target, current); stop if its norm < tol
-    #   3. the 6x6 Jacobian J of the tool frame at q (write your own function for it)
+    #   3. the Jacobian: J = jacobian(q, tool)
     #   4. a joint step dq from J and the error
     #   5. update q (limit the step size, keep q inside [Q_LO, Q_HI])
     raise NotImplementedError("Part 2: implement inverse_kinematics() in student_kinematics.py")

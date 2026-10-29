@@ -1,8 +1,10 @@
-"""Part 1: forward kinematics. Test forward_kinematics() in student_kinematics.py.
+"""Part 1: forward kinematics. Test forward_kinematics() in student_kinematics.py and
+mujoco_fk() in student_mujoco.py.
 
-Without a file, this runs the graded test: your forward_kinematics() is compared with
-the simulator at random joint angles, for the flange itself, for the basic hand's
-grasp site and for random tool frames.
+Without a file, this runs the graded test at random joint angles: your
+forward_kinematics() is compared with the simulator for the flange itself, the basic
+hand's grasp site and random tool frames, and your mujoco_fk() for the flange and the
+grasp site. Each section passes on its own, so you can work on one at a time.
 
 With a joint file (see trajectories/), the robot moves through the joint angles in the
 file. The viewer draws the grasp-site frame from YOUR forward kinematics (long axes,
@@ -20,10 +22,11 @@ Examples:
 import argparse
 from pathlib import Path
 
+import mujoco
 import numpy as np
 
 from rb5_sim.controller import RB5, ViewerClosed
-from rb5_sim.kinematics import (DEFAULT_KINEMATICS, forbidden_imports, load_kinematics, pose_matrix,
+from rb5_sim.kinematics import (DEFAULT_KINEMATICS, DEFAULT_MUJOCO, load_student_file, pose_matrix,
                                 read_joint_file, write_pose_file)
 from rb5_sim.playback import FrameMarkers, open_robot, recording, wait_for_close
 
@@ -49,28 +52,50 @@ def random_tool(rng: np.random.Generator) -> np.ndarray:
     return pose_matrix(rng.uniform(-0.2, 0.2, 3), np.eye(3) + np.sin(a) * K + (1 - np.cos(a)) * K @ K)
 
 
-def run_test(robot: RB5, n: int, seed: int, verbose: bool) -> bool:
-    rng = np.random.default_rng(seed)
-    tools = {"flange (tool = identity)": lambda: np.eye(4),
-             "basic hand grasp site": lambda: robot.tool,
-             "random tool frames": lambda: random_tool(rng)}
-    all_passed = True
-    print(f"Random joint angles in [-180, 180] deg, {n} per case (seed {seed}); "
-          f"pass: < {PASS_POS * 1e3:g} mm and < {np.degrees(PASS_ROT):.1e} deg\n")
-    for name, tool in tools.items():
-        passed, worst_p, worst_r = 0, 0.0, 0.0
+def compare_mujoco(robot: RB5, mj, data, q: np.ndarray, site: str) -> tuple[float, float]:
+    """Position [m] and rotation [rad] error of your MuJoCo FK against the simulator."""
+    T = np.asarray(mj.mujoco_fk(robot.sim.model, data, np.array(q, dtype=float), site), dtype=float)
+    if T.shape != (4, 4):
+        raise SystemExit(f"mujoco_fk must return a 4x4 matrix, got shape {T.shape}")
+    true = pose_matrix(*robot.sim_fk(q, site=site))
+    cos = np.clip((np.trace(T[:3, :3] @ true[:3, :3].T) - 1) / 2, -1, 1)
+    return float(np.linalg.norm(T[:3, 3] - true[:3, 3])), float(np.arccos(cos))
+
+
+def check_cases(name: str, n: int, rng: np.random.Generator, error, verbose: bool) -> bool:
+    """Run error(q) -> (position error, rotation error) at n random joint angles."""
+    passed, worst_p, worst_r = 0, 0.0, 0.0
+    try:
         for i in range(n):
             q = rng.uniform(-np.pi, np.pi, 6)
-            dp, dr = compare(robot, q, tool())
+            dp, dr = error(q)
             ok = dp < PASS_POS and dr < PASS_ROT
             passed += ok
             worst_p, worst_r = max(worst_p, dp), max(worst_r, dr)
             if verbose or (not ok and i - passed < 3):  # every case, or the first 3 failures
                 print(f"  [{'PASS' if ok else 'FAIL'}] q = {np.round(np.degrees(q), 1)} deg: "
                       f"{dp * 1e3:.4f} mm, {np.degrees(dr):.4f} deg")
-        all_passed &= passed == n
-        print(f"{name:<26} {passed:>3}/{n} passed  (worst {worst_p * 1e3:.2e} mm, {np.degrees(worst_r):.2e} deg)")
-    return all_passed
+    except NotImplementedError:
+        print(f"{name:<36} not implemented yet")
+        return False
+    print(f"{name:<36} {passed:>3}/{n} passed  (worst {worst_p * 1e3:.2e} mm, {np.degrees(worst_r):.2e} deg)")
+    return passed == n
+
+
+def run_test(robot: RB5, mj, n: int, seed: int, verbose: bool) -> bool:
+    rng = np.random.default_rng(seed)
+    data = mujoco.MjData(robot.sim.model)  # scratch data for your MuJoCo code
+    cases = {
+        "Your FK: flange (tool = identity)": lambda q: compare(robot, q, np.eye(4)),
+        "Your FK: basic hand grasp site": lambda q: compare(robot, q, robot.tool),
+        "Your FK: random tool frames": lambda q: compare(robot, q, random_tool(rng)),
+        "MuJoCo FK: flange (site tcp)": lambda q: compare_mujoco(robot, mj, data, q, "tcp"),
+        "MuJoCo FK: grasp site": lambda q: compare_mujoco(robot, mj, data, q, "grasp"),
+    }
+    print(f"Random joint angles in [-180, 180] deg, {n} per case (seed {seed}); "
+          f"pass: < {PASS_POS * 1e3:g} mm and < {np.degrees(PASS_ROT):.1e} deg\n")
+    results = [check_cases(name, n, rng, error, verbose) for name, error in cases.items()]
+    return all(results)
 
 
 def fk_ready(robot: RB5) -> bool:
@@ -131,16 +156,15 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=0, help="test: random seed (default 0)")
     parser.add_argument("-v", "--verbose", action="store_true", help="test: print every case")
     parser.add_argument("--kinematics", type=Path, default=DEFAULT_KINEMATICS, help=argparse.SUPPRESS)
+    parser.add_argument("--mujoco", type=Path, default=DEFAULT_MUJOCO, help=argparse.SUPPRESS)
     args = parser.parse_args()
 
-    bad = forbidden_imports(args.kinematics)
-    if bad:
-        raise SystemExit(f"{args.kinematics} imports {', '.join(bad)}: only NumPy is allowed (see PART1_FK.md)")
-    kin = load_kinematics(args.kinematics)
+    kin = load_student_file(args.kinematics)
+    mj = load_student_file(args.mujoco, mujoco_allowed=True)
     try:
         with open_robot(kin, viewer=bool(args.file) and not args.headless, playback=args.playback) as (robot, v):
             if args.file is None:
-                ok = run_test(robot, args.n, args.seed, args.verbose)
+                ok = run_test(robot, mj, args.n, args.seed, args.verbose)
                 print(f"\nPart 1 {'PASSED' if ok else 'FAILED'}")
                 return
             play(robot, v, args.file, args.out, args.video)

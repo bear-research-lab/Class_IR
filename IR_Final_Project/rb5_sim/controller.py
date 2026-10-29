@@ -166,6 +166,17 @@ class RB5:
         mujoco.mj_kinematics(m, d)
         return d.site_xpos[sid].copy(), d.site_xmat[sid].reshape(3, 3).copy()
 
+    def sim_jacobian(self, q: np.ndarray, site: str | None = None) -> np.ndarray:
+        """Ground truth from the simulator: 6x6 Jacobian [linear; angular] of the grasp site at q."""
+        m, d = self.sim.model, self._fk_data
+        sid = self.site_id if site is None else m.site(site).id
+        d.qpos[self.qadr] = q
+        mujoco.mj_kinematics(m, d)
+        mujoco.mj_comPos(m, d)
+        jacp, jacr = np.zeros((3, m.nv)), np.zeros((3, m.nv))
+        mujoco.mj_jacSite(m, d, jacp, jacr, sid)
+        return np.vstack([jacp, jacr])[:, self.dofadr]
+
     # ---- motion ----------------------------------------------------------------------
 
     def _run(self, duration: float, update) -> None:

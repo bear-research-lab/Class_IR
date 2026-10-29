@@ -29,7 +29,9 @@ from types import ModuleType
 import numpy as np
 
 DEFAULT_KINEMATICS = Path(__file__).resolve().parent.parent / "student_kinematics.py"
-FORBIDDEN_IMPORTS = ("mujoco", "rb5_sim")
+DEFAULT_MUJOCO = Path(__file__).resolve().parent.parent / "student_mujoco.py"
+FORBIDDEN_IMPORTS = ("mujoco", "rb5_sim")   # student_kinematics.py: NumPy only
+FORBIDDEN_IMPORTS_MUJOCO = ("rb5_sim",)     # student_mujoco.py: MuJoCo and NumPy
 JOINT_KEYS = tuple(f"theta{i}" for i in range(1, 7))
 POSITION_KEYS = ("x", "y", "z")
 EULER_KEYS = ("alpha", "beta", "gamma")
@@ -47,7 +49,17 @@ def load_kinematics(path: str | Path = DEFAULT_KINEMATICS) -> ModuleType:
     return module
 
 
-def forbidden_imports(path: str | Path = DEFAULT_KINEMATICS) -> list[str]:
+def load_student_file(path: str | Path, mujoco_allowed: bool = False) -> ModuleType:
+    """Check a student file's imports against the rules, then load it."""
+    forbidden = FORBIDDEN_IMPORTS_MUJOCO if mujoco_allowed else FORBIDDEN_IMPORTS
+    bad = forbidden_imports(path, forbidden)
+    if bad:
+        allowed = "mujoco and NumPy are" if mujoco_allowed else "only NumPy is"
+        raise SystemExit(f"{path} imports {', '.join(bad)}: {allowed} allowed (see PART1_FK.md)")
+    return load_kinematics(path)
+
+
+def forbidden_imports(path: str | Path = DEFAULT_KINEMATICS, forbidden=FORBIDDEN_IMPORTS) -> list[str]:
     """Names of modules imported by the file that the rules don't allow."""
     tree = ast.parse(Path(path).read_text(encoding="utf-8"))
     names = []
@@ -58,7 +70,7 @@ def forbidden_imports(path: str | Path = DEFAULT_KINEMATICS) -> list[str]:
             names.append(node.module)
         elif isinstance(node, ast.Call) and getattr(node.func, "id", "") == "__import__":
             names.append("__import__(...)")
-    return sorted({n for n in names if n.split(".")[0] in FORBIDDEN_IMPORTS or n.startswith("__import__")})
+    return sorted({n for n in names if n.split(".")[0] in forbidden or n.startswith("__import__")})
 
 
 # ---- rotations --------------------------------------------------------------------

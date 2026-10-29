@@ -3,10 +3,33 @@
 *[English](PART2_IK.md)*
 
 피펫팅 프로그램은 로봇에게 관절 각도가 아니라 핸드가 있어야 할 자세를 줍니다. 역기구학(IK)은
-핸드의 `grasp` 사이트 자세를 6개의 관절 각도로 바꿉니다. 이 파트에서는 Part 1의 FK를 이용해
-IK를 작성하고, 마지막으로 기본 핸드로 피펫팅 작업을 실행해 봅니다.
+핸드의 `grasp` 사이트 자세를 6개의 관절 각도로 바꿉니다. 이 파트에서는 자코비안을 직접 유도하고
+MuJoCo로도 구한 뒤, Part 1의 FK를 이용해 IK를 작성하고, 마지막으로 기본 핸드로 피펫팅 작업을
+실행해 봅니다.
 
 ## 1. 구현할 것
+
+### 1.1 직접 유도한 자코비안
+
+**`student_kinematics.py`**의 `jacobian()`을 채우세요.
+
+```python
+def jacobian(q, tool=np.eye(4)) -> J   # 툴 좌표계의 6x6 기하학적 자코비안
+```
+
+0-2행은 툴 좌표계 원점의 선속도, 3-5행은 각속도이며 둘 다 베이스 좌표계 기준입니다. i번째 열은
+i번째 관절에 해당합니다. FK의 관절 축과 관절 위치로 유도하거나(기하학적 자코비안),
+`forward_kinematics()`의 유한 차분으로 계산하세요(각속도 행은 방향 변화의 `rotation_vector()`를
+씁니다). NumPy만 사용합니다.
+
+### 1.2 MuJoCo로 구하는 자코비안
+
+**`student_mujoco.py`**의 `mujoco_jacobian(model, data, q, site="grasp")`를 채우세요. 같은 6×6
+자코비안을 `mujoco.mj_jacSite`로 구합니다. 그 전에 `mj_kinematics`와 `mj_comPos`를 차례로 실행하고,
+전체 자코비안에서 팔 관절 6개의 열(`model.joint(name).dofadr`)만 남기세요. 테스트가 두 자코비안을
+모두 시뮬레이터와 비교하므로, 한쪽으로 다른 쪽의 실수를 찾을 수 있습니다.
+
+### 1.3 역기구학
 
 **`student_kinematics.py`**의 `inverse_kinematics()`를 채우세요.
 
@@ -24,9 +47,8 @@ def inverse_kinematics(target, q_init, tool=np.eye(4), max_iters=200, tol=1e-6) 
 | 반환값 `err` | `q`에서의 6차원 자세 오차의 노름 |
 
 파일에 `pose_error(target, current)`가 주어져 있습니다. 현재 자세에서 목표 자세까지의 6차원
-오차 [Δp; 회전 벡터]를 돌려줍니다. 나머지는 직접 작성하세요. 툴 좌표계의 6×6 자코비안을 구하는
-함수도 포함됩니다 (FK의 관절 축과 위치로 구하는 기하학적 자코비안, 또는 유한 차분으로 구하는
-수치 자코비안). 감쇠 최소제곱법(damped least squares)으로 시작하면 좋습니다.
+오차 [Δp; 회전 벡터]를 돌려줍니다. 이것을 1.1의 `jacobian()`과 함께 쓰세요 (로봇은 MuJoCo가
+아니라 여러분의 NumPy 코드로 움직입니다). 감쇠 최소제곱법(damped least squares)으로 시작하면 좋습니다.
 
     Δq = Jᵀ (J Jᵀ + λ² I)⁻¹ e
 
@@ -63,6 +85,9 @@ uv run part2_ik.py trajectories/poses_example.txt --joint-space
 uv run part2_ik.py trajectories/poses_example.txt --out my_joints.txt
 ```
 
+- **자코비안:** 무작위 관절 각도 20개에서 `jacobian()`과 `mujoco_jacobian()`을 시뮬레이터의
+  grasp 사이트 자코비안과 비교합니다. 모든 원소의 오차가 1e-4 이내이면 통과입니다. 실패하면
+  관절별 열의 최대 오차가 출력되므로 어느 관절이 틀렸는지 알 수 있습니다.
 - **테스트 1 (무작위):** 홈 자세 근처의 무작위 관절 각도로 만든 목표 50개. 모든 풀이는 홈
   자세에서 시작합니다.
 - **테스트 2 (작업):** `layouts.md`의 모든 배치에 대한 피펫팅 작업의 grasp 사이트 경유점. 순서대로
@@ -87,6 +112,7 @@ uv run part2_ik.py trajectories/poses_example.txt --out my_joints.txt
   것이니, 여러분이 만든 파일로 녹화하세요).
 - 기본 핸드와 여러분의 IK로 피펫팅 작업을 수행하는 **영상**:
   `uv run part2_ik.py --task --headless --video task.mp4`로 녹화합니다.
-- 채점용 테스트 결과 (`uv run part2_ik.py`).
+- 채점용 테스트 결과 (`uv run part2_ik.py`). 두 자코비안 모두 포함.
+- 자코비안을 어떻게 유도했는지, 그리고 MuJoCo로는 어떻게 구했는지.
 - 자코비안과 갱신 규칙, λ·스텝 제한·허용 오차의 값, 그리고 이 값들을 바꾸면 어떻게 되는지
   (예: 특이 자세 근처, 반복 횟수가 너무 적을 때).

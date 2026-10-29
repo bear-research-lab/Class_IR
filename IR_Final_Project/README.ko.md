@@ -7,8 +7,8 @@ Rainbow Robotics RB5 협동로봇이 피펫팅 작업을 하는 MuJoCo 시뮬레
 
 | 파트 | 작성할 것 | 설명서 | 테스트 |
 |---|---|---|---|
-| 1. 정기구학 | `student_kinematics.py`의 `forward_kinematics()` | [PART1_FK.ko.md](PART1_FK.ko.md) | `uv run part1_fk.py` |
-| 2. 역기구학 | `student_kinematics.py`의 `inverse_kinematics()` | [PART2_IK.ko.md](PART2_IK.ko.md) | `uv run part2_ik.py --task` |
+| 1. 정기구학 | `student_kinematics.py`의 `forward_kinematics()` (NumPy), `student_mujoco.py`의 `mujoco_fk()` | [PART1_FK.ko.md](PART1_FK.ko.md) | `uv run part1_fk.py` |
+| 2. 역기구학 | `student_kinematics.py`의 `jacobian()`, `inverse_kinematics()`, `student_mujoco.py`의 `mujoco_jacobian()` | [PART2_IK.ko.md](PART2_IK.ko.md) | `uv run part2_ik.py --task` |
 | 3. 피펫팅 핸드 | `hands/<팀이름>/hand.xml` | [PART3_HAND.ko.md](PART3_HAND.ko.md) | `uv run evaluate_hand.py` |
 
 로봇은 여러분의 기구학으로 움직입니다. 모든 동작이 여러분의 `forward_kinematics()`와
@@ -117,7 +117,8 @@ uv run evaluate_hand.py --hand hands/<팀이름>/hand.xml --seed 0
 | 경로 | 내용 |
 |---|---|
 | `PART1_FK.ko.md`, `PART2_IK.ko.md`, `PART3_HAND.ko.md` | 세 파트의 설명: 할 일, 규칙, 채점, 최종 발표에서 보여 줄 것 |
-| `student_kinematics.py` | 여러분의 FK와 IK (Part 1, 2) |
+| `student_kinematics.py` | NumPy로 직접 유도한 FK, 자코비안, IK (Part 1, 2). 로봇은 이것으로 움직입니다 |
+| `student_mujoco.py` | 같은 FK와 자코비안을 MuJoCo 함수로 구현 (Part 1, 2) |
 | `trajectories/` | 관절 각도 파일과 자세 파일 예시 |
 | `hands/basic/` | 시작점이 되는 기본 핸드 (Part 3) |
 | `layouts.md` | 물체 위치 (피펫 홀더, 물통, 분주 용기) |

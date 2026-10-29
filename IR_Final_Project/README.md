@@ -7,8 +7,8 @@ has three parts; each one builds on the one before:
 
 | Part | You write | Handout | Test |
 |---|---|---|---|
-| 1. Forward kinematics | `forward_kinematics()` in `student_kinematics.py` | [PART1_FK.md](PART1_FK.md) | `uv run part1_fk.py` |
-| 2. Inverse kinematics | `inverse_kinematics()` in `student_kinematics.py` | [PART2_IK.md](PART2_IK.md) | `uv run part2_ik.py --task` |
+| 1. Forward kinematics | `forward_kinematics()` in `student_kinematics.py` (NumPy), `mujoco_fk()` in `student_mujoco.py` | [PART1_FK.md](PART1_FK.md) | `uv run part1_fk.py` |
+| 2. Inverse kinematics | `jacobian()`, `inverse_kinematics()` in `student_kinematics.py`, `mujoco_jacobian()` in `student_mujoco.py` | [PART2_IK.md](PART2_IK.md) | `uv run part2_ik.py --task` |
 | 3. Pipetting hand | `hands/<your-team>/hand.xml` | [PART3_HAND.md](PART3_HAND.md) | `uv run evaluate_hand.py` |
 
 The robot moves with your kinematics: every move calls your `forward_kinematics()` and
@@ -117,7 +117,8 @@ Every command accepts `--hand path/to/hand.xml`. Run any script with `--help` fo
 | Path | Contents |
 |---|---|
 | `PART1_FK.md`, `PART2_IK.md`, `PART3_HAND.md` | The three parts: what to do, rules, scoring, what to show at the final presentation |
-| `student_kinematics.py` | Your FK and IK (Parts 1 and 2) |
+| `student_kinematics.py` | Your FK, Jacobian and IK, derived yourself with NumPy (Parts 1 and 2); the robot moves with these |
+| `student_mujoco.py` | The same FK and Jacobian with MuJoCo's functions (Parts 1 and 2) |
 | `trajectories/` | Example joint and pose files |
 | `hands/basic/` | The basic hand to start from (Part 3) |
 | `layouts.md` | Object positions (pipette holder, water box, dispense box) |

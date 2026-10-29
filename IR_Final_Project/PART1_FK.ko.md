@@ -3,10 +3,13 @@
 *[English](PART1_FK.md)*
 
 RB5는 6개의 관절 각도로 움직입니다. 정기구학(FK)은 "이 관절 각도에서 핸드는 어디에 있고 어느
-방향을 향하는가?"에 답합니다. 이 파트에서는 RB5의 FK를 작성하고, 관절 각도 파일을 재생하면서
+방향을 향하는가?"에 답합니다. 이 파트에서는 RB5의 FK를 두 번 작성합니다. 한 번은 직접 유도하고,
+한 번은 실무에서처럼 MuJoCo 함수를 써서 구합니다. 그리고 관절 각도 파일을 재생하면서 두 결과를
 시뮬레이터와 비교해 확인합니다.
 
 ## 1. 구현할 것
+
+### 1.1 직접 유도한 FK
 
 **`student_kinematics.py`**의 `forward_kinematics()`를 채우세요.
 
@@ -21,6 +24,27 @@ def forward_kinematics(q, tool=np.eye(4)) -> T   # 베이스 좌표계에서 본
 | 반환값 `T` | (4, 4) 동차 변환행렬 T_base_tool = T_base_flange(q) · tool |
 
 NumPy만 사용하세요. 이 파일에서 `mujoco`나 `rb5_sim`을 import하면 안 됩니다 (스크립트가 검사합니다).
+로봇은 이 함수로 움직이며, 기구학을 직접 유도하는 것이 이 함수의 목적입니다.
+
+### 1.2 MuJoCo로 구하는 FK
+
+**`student_mujoco.py`**의 `mujoco_fk()`를 채우세요.
+
+```python
+def mujoco_fk(model, data, q, site="tcp") -> T   # MuJoCo로 구한 사이트의 4x4 자세
+```
+
+| 인자 | 의미 |
+|---|---|
+| `model`, `data` | 시뮬레이션의 `MjModel`과 여러분 전용 `MjData` (바꿔도 로봇은 움직이지 않습니다) |
+| `q` | (6,) 관절 각도 [rad], 위와 같은 순서 |
+| `site` | `"tcp"` = 플랜지, `"grasp"` = 핸드의 grasp 사이트 |
+| 반환값 `T` | (4, 4) 베이스 좌표계에서 본 사이트의 자세 |
+
+이 파일에서는 MuJoCo와 NumPy를 씁니다 (`rb5_sim`은 안 됩니다). 필요한 것은 `qpos`에서 관절의
+위치(`model.joint(name).qposadr`), `mujoco.mj_kinematics`, 그리고 `data.site_xpos`와
+`data.site_xmat`에 있는 사이트 자세입니다. 모델에는 손가락과 피펫도 들어 있어서 팔 관절이 단순히
+`qpos[0:6]`이 아닙니다. 함수 목록과 간단한 설명은 파일 맨 위에 있습니다.
 
 ## 2. 로봇
 
@@ -71,9 +95,11 @@ uv run part1_fk.py trajectories/joints_example.txt          # 뷰어에서 관�
 uv run part1_fk.py trajectories/joints_example.txt --out my_poses.txt   # FK 결과 자세를 파일로 저장
 ```
 
-- **채점용 테스트** (파일 없이 실행): 플랜지, 기본 핸드의 grasp 사이트, 무작위 툴 좌표계에 대해
-  각각 무작위 관절 각도 100개에서 여러분의 FK를 시뮬레이터와 비교합니다. 위치 오차가 0.001 mm,
-  회전 오차가 1e-6 rad 이내이면 통과입니다.
+- **채점용 테스트** (파일 없이 실행): 경우마다 무작위 관절 각도 100개에서, `forward_kinematics()`는
+  플랜지, 기본 핸드의 grasp 사이트, 무작위 툴 좌표계에 대해, `mujoco_fk()`는 `tcp`와 `grasp`
+  사이트에 대해 시뮬레이터와 비교합니다. 위치 오차가 0.001 mm, 회전 오차가 1e-6 rad 이내이면
+  통과입니다. 항목마다 따로 결과를 내므로 (아직 안 했으면 "not implemented yet") 어느 쪽부터
+  해도 됩니다.
 - **파일 재생**: 뷰어에 **여러분의** FK로 계산한 grasp 사이트 좌표계(긴 축: x 빨강, y 초록, z 파랑)와
   그 궤적이 그려집니다. FK가 맞다면 이 좌표계가 핸드의 두 손가락 사이에 붙어 있습니다. 경유점마다
   여러분의 FK 위치, 시뮬레이터의 위치, 그 오차가 출력됩니다.
@@ -87,5 +113,6 @@ uv run part1_fk.py trajectories/joints_example.txt --out my_poses.txt   # FK 결
   `uv run part1_fk.py my_joints.txt --headless --video part1.mp4`로 녹화합니다. 동작하는 내내
   여러분의 FK 좌표계가 핸드 위에 붙어 있어야 합니다. 참고: [이렇게 보여야 합니다](https://youtu.be/VN9uyTWR938)
   (참고 영상은 예시 파일을 재생한 것이니, 여러분이 만든 파일로 녹화하세요).
-- 채점용 테스트 결과 (`uv run part1_fk.py`).
+- 채점용 테스트 결과 (`uv run part1_fk.py`). 직접 유도한 FK와 MuJoCo FK 모두.
 - 기구학 모델(변환 체인 또는 DH 표)과 좌표계를 그린 그림.
+- `mujoco_fk()`의 동작 방식, 그리고 MuJoCo를 쓰면서 주의해야 했던 점.
